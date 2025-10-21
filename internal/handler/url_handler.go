@@ -3,10 +3,13 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"go-url-shortener/internal/repository"
 	"go-url-shortener/internal/util"
+
+	"gorm.io/gorm"
 )
 
 type URLHandler struct {
@@ -62,4 +65,30 @@ func (h *URLHandler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(response)
 
+}
+
+func (h *URLHandler) RedirectURL(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	shortCode := r.URL.Path[1:]
+	if shortCode == "" {
+		fmt.Fprintln(w, "Welcome to the URL Shortener Service! USE /shorten to shorten URLs.")
+		return
+	}
+
+	url, err := h.urlRepo.GetByShortCode(shortCode)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			http.Error(w, "URL not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Error internal server", http.StatusInternalServerError)
+	}
+
+	if err := h.urlRepo.IncrementClicks(shortCode); err != nil {
+		log.Println("Failed to increment click count:", err)
+	}
+	http.Redirect(w, r, url.OriginalURL, http.StatusFound)
 }
