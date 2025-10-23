@@ -92,3 +92,20 @@ func (h *URLHandler) RedirectURL(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Redirect(w, r, url.OriginalURL, http.StatusFound)
 }
+
+func (h *URLHandler) ListURLs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var urls []model.URL
+	urls, err := h.repo.FindAll()
+	if err != nil {
+		http.Error(w, "Failed to retrieve URLs", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(urls)
+}
