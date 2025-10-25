@@ -1,0 +1,19 @@
+# Arquivos de Build/Executáveis
+# Ignora executáveis gerados pelo Go (qualquer nome)
+*.exe
+*.bin
+
+# Arquivos de Teste
+# Ignora caches de teste
+*.test
+*.out
+
+# IDE/Editor (Se aplicável)
+.vscode/
+
+# Dependências (Se não usar Go Modules, mas você usa)
+# vendor/
+
+# Banco de Dados (ESPECÍFICO DO SEU PROJETO)
+# Ignora o arquivo do banco de dados local do SQLite
+*.db
