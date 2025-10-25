@@ -3,20 +3,20 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"net/http"
-
+	"go-url-shortener/internal/model"
 	"go-url-shortener/internal/repository"
 	"go-url-shortener/internal/util"
+	"log"
+	"net/http"
 
 	"gorm.io/gorm"
 )
 
 type URLHandler struct {
-	urlRepo *repository.URLRepository
+	urlRepo repository.URLRepository
 }
 
-func NewURLHandler(urlRepo *repository.URLRepository) *URLHandler {
+func NewURLHandler(urlRepo repository.URLRepository) *URLHandler {
 	return &URLHandler{urlRepo: urlRepo}
 }
 
@@ -49,7 +49,7 @@ func (h *URLHandler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		Clicks:      0,
 	}
 
-	if err := h.repo.Save(&newURL); err != nil {
+	if err := h.urlRepo.Save(&newURL); err != nil {
 		http.Error(w, "Failed to shorten URL", http.StatusInternalServerError)
 		return
 	}
@@ -78,13 +78,14 @@ func (h *URLHandler) RedirectURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url, err := h.urlRepo.GetByShortCode(shortCode)
+	url, err := h.urlRepo.FindByCode(shortCode)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			http.Error(w, "URL not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, "Error internal server", http.StatusInternalServerError)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 
 	if err := h.urlRepo.IncrementClicks(shortCode); err != nil {
@@ -92,14 +93,13 @@ func (h *URLHandler) RedirectURL(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Redirect(w, r, url.OriginalURL, http.StatusFound)
 }
-
 func (h *URLHandler) ListURLs(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	var urls []model.URL
-	urls, err := h.repo.FindAll()
+	urls, err := h.urlRepo.FindAll()
 	if err != nil {
 		http.Error(w, "Failed to retrieve URLs", http.StatusInternalServerError)
 		return
